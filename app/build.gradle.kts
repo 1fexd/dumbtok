@@ -51,6 +51,7 @@ android {
         release {
             isMinifyEnabled = true
             resValue("string", "app_name", "DumbTok")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
 
         register("nightly") {
