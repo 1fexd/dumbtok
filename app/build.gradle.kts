@@ -3,6 +3,10 @@ import fe.buildsrc.dependency.Grrfe
 import fe.buildsrc.dependency._1fexd
 import fe.buildsrc.extension.getOrSystemEnv
 import fe.buildsrc.extension.readPropertiesOrNull
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 plugins {
     kotlin("android")
@@ -14,6 +18,9 @@ plugins {
     id("net.nemerosa.versioning")
 }
 
+var appName = "DumbTok"
+val dtf: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH_mm_ss")
+
 android {
     namespace = "fe.dumbtok"
     compileSdk = Version.COMPILE_SDK
@@ -22,8 +29,21 @@ android {
         applicationId = "fe.dumbtok"
         minSdk = Version.MIN_SDK
         targetSdk = Version.COMPILE_SDK
-        versionCode = 1
-        versionName = "0.0.1"
+
+        val now = System.currentTimeMillis()
+        val localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("UTC"))
+        val versionInfo = providers.provider { versioning.info }.get()
+
+        versionCode = versionInfo.tag?.let {
+            versionInfo.versionNumber.versionCode
+        } ?: (now / 1000).toInt()
+
+        versionName = versionInfo.tag ?: versionInfo.full
+        val archivesBaseName = if (versionInfo.tag != null) {
+            "$appName-$versionName"
+        } else "$appName-${dtf.format(localDateTime)}-$versionName"
+
+        setProperty("archivesBaseName", archivesBaseName)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -45,12 +65,12 @@ android {
     buildTypes {
         debug {
             versionNameSuffix = "-debug"
-            resValue("string", "app_name", "DumbTok Debug")
+            resValue("string", "app_name", "$appName Debug")
         }
 
         release {
             isMinifyEnabled = true
-            resValue("string", "app_name", "DumbTok")
+            resValue("string", "app_name", appName)
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
 
@@ -62,7 +82,7 @@ android {
             applicationIdSuffix = ".nightly"
             versionNameSuffix = "-nightly"
 
-            resValue("string", "app_name", "DumbTok Nightly")
+            resValue("string", "app_name", "$appName Nightly")
         }
     }
 
@@ -75,8 +95,6 @@ android {
 
     buildFeatures {
         compose = true
-        aidl = true
-        buildConfig = true
     }
 
     packaging {
@@ -146,30 +164,14 @@ dependencies {
     implementation(AndroidX.compose.ui.graphics)
     implementation(AndroidX.compose.ui.toolingPreview)
     implementation(AndroidX.compose.material3)
-    implementation(AndroidX.media3.cast)
     implementation(AndroidX.media3.common)
-    implementation(AndroidX.media3.container)
     implementation(AndroidX.media3.database)
     implementation(AndroidX.media3.dataSource)
-    implementation(AndroidX.media3.dataSource.okhttp)
-    implementation(AndroidX.media3.dataSource.rtmp)
-    implementation(AndroidX.media3.decoder)
-    implementation(AndroidX.media3.effect)
     implementation(AndroidX.media3.exoPlayer)
-    implementation(AndroidX.media3.exoPlayer.dash)
-    implementation(AndroidX.media3.exoPlayer.hls)
-    implementation(AndroidX.media3.exoPlayer.ima)
-    implementation(AndroidX.media3.exoPlayer.rtsp)
-    implementation(AndroidX.media3.exoPlayer.workmanager)
-    implementation(AndroidX.media3.extractor)
-    implementation(AndroidX.media3.muxer)
     implementation(AndroidX.media3.session)
-    implementation(AndroidX.media3.testUtils)
-    implementation(AndroidX.media3.testUtils.robolectric)
-    implementation(AndroidX.media3.transformer)
+    androidTestImplementation(AndroidX.media3.testUtils)
+    androidTestImplementation(AndroidX.media3.testUtils.robolectric)
     implementation(AndroidX.media3.ui)
-    implementation(AndroidX.media3.ui.leanback)
-
 
     implementation(AndroidX.appCompat)
     implementation(Google.android.material)
