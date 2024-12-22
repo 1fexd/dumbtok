@@ -9,6 +9,7 @@ import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import assertk.assertions.prop
 import assertk.tableOf
+import fe.dumbtok.module.tiktok.TikTokUrlService
 import org.junit.Test
 
 internal class TikTokUrlServiceTest {

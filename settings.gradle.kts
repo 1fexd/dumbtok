@@ -7,13 +7,11 @@ pluginManagement {
     }
 
     plugins {
-        kotlin("plugin.serialization") version "2.0.20"
+        kotlin("plugin.serialization") version "2.1.0"
         id("de.fayard.refreshVersions") version "0.60.5"
         id("androidx.navigation.safeargs") version "2.8.2"
-        id("org.jetbrains.kotlin.android") version "2.0.0"
-        id("org.jetbrains.kotlin.plugin.compose") version "2.0.0"
-        id("org.jetbrains.kotlin.android") version "2.0.0"
-        id("org.jetbrains.kotlin.plugin.compose") version "2.0.0"
+        id("org.jetbrains.kotlin.android") version "2.1.0"
+        id("org.jetbrains.kotlin.plugin.compose") version "2.1.0"
     }
 }
 
@@ -35,6 +33,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "dumbtok"
-
 include(":app")
-

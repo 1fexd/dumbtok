@@ -1,6 +1,6 @@
 package fe.dumbtok
 
-import fe.dumbtok.storage.StorageBackend
+import fe.dumbtok.module.storage.StorageBackend
 import java.io.File
 import java.io.OutputStream
 

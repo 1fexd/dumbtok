@@ -1,5 +1,8 @@
 import fe.buildsrc.Version
 import fe.buildsrc.dependency.Grrfe
+import fe.buildsrc.dependency._1fexd
+import fe.buildsrc.extension.getOrSystemEnv
+import fe.buildsrc.extension.readPropertiesOrNull
 
 plugins {
     kotlin("android")
@@ -28,6 +31,17 @@ android {
         }
     }
 
+    signingConfigs {
+        register("env") {
+            val properties = rootProject.file(".ignored/keystore.properties").readPropertiesOrNull()
+
+            storeFile = properties.getOrSystemEnv("KEYSTORE_FILE_PATH")?.let { rootProject.file(it) }
+            storePassword = properties.getOrSystemEnv("KEYSTORE_PASSWORD")
+            keyAlias = properties.getOrSystemEnv("KEY_ALIAS")
+            keyPassword = properties.getOrSystemEnv("KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         debug {
             versionNameSuffix = "-debug"
@@ -38,10 +52,24 @@ android {
             isMinifyEnabled = true
             resValue("string", "app_name", "DumbTok")
         }
+
+        register("nightly") {
+            initWith(buildTypes.getByName("release"))
+            matchingFallbacks.add("release")
+            signingConfig = signingConfigs.getByName("env")
+
+            applicationIdSuffix = ".nightly"
+            versionNameSuffix = "-nightly"
+
+            resValue("string", "app_name", "DumbTok Nightly")
+        }
     }
 
     kotlin {
         jvmToolchain(Version.JVM)
+        compilerOptions {
+            freeCompilerArgs.addAll("-P", "plugin:org.jetbrains.kotlin.parcelize:experimentalCodeGeneration=true")
+        }
     }
 
     buildFeatures {
@@ -52,7 +80,8 @@ android {
 
     packaging {
         resources {
-            excludes += setOf("/META-INF/{AL2.0,LGPL2.1}", "META-INF/atomicfu.kotlin_module")
+            excludes += "/META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+
         }
     }
 }
@@ -91,19 +120,58 @@ dependencies {
 
     implementation(Koin.android)
     implementation(Koin.compose)
+    implementation(_1fexd.android.preference.core)
+    implementation(_1fexd.android.preference.compose)
+    implementation(_1fexd.android.preference.composeMock)
+    implementation(_1fexd.android.compose.dialog)
+    implementation(_1fexd.android.compose.route)
+    implementation(_1fexd.android.span.compose)
+    implementation(_1fexd.android.lifecycleUtil.core)
+    implementation(_1fexd.android.lifecycleUtil.koin)
+    implementation(_1fexd.composeKit.app.core)
+    implementation(_1fexd.composeKit.theme.core)
+    implementation(_1fexd.composeKit.theme.preference)
+    implementation(_1fexd.composeKit.component)
+    implementation(_1fexd.composeKit.core)
+    implementation(_1fexd.composeKit.layout)
+
     implementation("io.ktor:ktor-client-okhttp-jvm:_")
     implementation(AndroidX.lifecycle.runtime.ktx)
     implementation(AndroidX.activity.compose)
+    implementation(AndroidX.activity)
+
     implementation(platform(AndroidX.compose.bom))
     implementation(AndroidX.compose.ui)
     implementation(AndroidX.compose.ui.graphics)
     implementation(AndroidX.compose.ui.toolingPreview)
     implementation(AndroidX.compose.material3)
-    implementation(AndroidX.media3.exoPlayer)
-    implementation(AndroidX.media3.ui)
-    implementation(AndroidX.media3.session)
-    implementation(AndroidX.media3.exoPlayer.dash)
+    implementation(AndroidX.media3.cast)
+    implementation(AndroidX.media3.common)
+    implementation(AndroidX.media3.container)
+    implementation(AndroidX.media3.database)
+    implementation(AndroidX.media3.dataSource)
     implementation(AndroidX.media3.dataSource.okhttp)
+    implementation(AndroidX.media3.dataSource.rtmp)
+    implementation(AndroidX.media3.decoder)
+    implementation(AndroidX.media3.effect)
+    implementation(AndroidX.media3.exoPlayer)
+    implementation(AndroidX.media3.exoPlayer.dash)
+    implementation(AndroidX.media3.exoPlayer.hls)
+    implementation(AndroidX.media3.exoPlayer.ima)
+    implementation(AndroidX.media3.exoPlayer.rtsp)
+    implementation(AndroidX.media3.exoPlayer.workmanager)
+    implementation(AndroidX.media3.extractor)
+    implementation(AndroidX.media3.muxer)
+    implementation(AndroidX.media3.session)
+    implementation(AndroidX.media3.testUtils)
+    implementation(AndroidX.media3.testUtils.robolectric)
+    implementation(AndroidX.media3.transformer)
+    implementation(AndroidX.media3.ui)
+    implementation(AndroidX.media3.ui.leanback)
+
+
+    implementation(AndroidX.appCompat)
+    implementation(Google.android.material)
 
     testImplementation(Koin.test)
     testImplementation(Koin.junit4)
