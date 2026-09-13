@@ -1,4 +1,5 @@
 @file:SuppressLint("UnsafeOptInUsageError")
+
 package fe.dumbtok.module.tiktok
 
 import android.annotation.SuppressLint
@@ -10,7 +11,11 @@ import io.ktor.client.*
 
 class TikTokStreamFactory(client: HttpClient) {
 
-    val httpDataSourceFactory = KtorHttpDataSource.Factory(client)
+    val httpDataSourceFactory = KtorHttpDataSource.Factory(client).setDefaultRequestProperties(
+        mapOf(
+            "referer" to "https://www.tiktok.com/"
+        )
+    )
     private val mediaSourceFactory = DefaultMediaSourceFactory(httpDataSourceFactory)
 
     fun createSource(url: String): MediaSource {
