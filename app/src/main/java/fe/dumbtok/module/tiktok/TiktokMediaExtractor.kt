@@ -26,7 +26,7 @@ class TiktokMediaExtractor {
         return data?.asObjectOrNull("__DEFAULT_SCOPE__")
     }
 
-    @VisibleForTesting(otherwise = VisibleForTesting.Companion.PRIVATE)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun handleImagePost(imagePost: JsonObject): List<String>? {
         return imagePost.asArrayOrNull("images")
             ?.elementsOrNull<JsonObject>()
