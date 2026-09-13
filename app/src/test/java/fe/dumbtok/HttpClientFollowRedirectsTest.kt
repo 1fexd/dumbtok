@@ -9,7 +9,7 @@ import io.ktor.client.engine.mock.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
-import kotlin.test.Test
+import org.junit.Test
 import kotlin.text.toIntOrNull
 
 internal class HttpClientFollowRedirectsTest {

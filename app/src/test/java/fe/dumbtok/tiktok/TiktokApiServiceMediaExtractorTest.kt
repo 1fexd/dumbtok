@@ -6,7 +6,7 @@ import assertk.tableOf
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fe.dumbtok.module.tiktok.TiktokMediaExtractor
-import kotlin.test.Test
+import org.junit.Test
 
 internal class TiktokApiServiceMediaExtractorTest {
     private val extractor = TiktokMediaExtractor()

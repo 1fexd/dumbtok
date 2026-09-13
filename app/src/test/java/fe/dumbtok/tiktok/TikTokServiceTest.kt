@@ -7,7 +7,7 @@ import fe.dumbtok.TestStorageBackend
 import fe.dumbtok.module.tiktok.TikTokService
 import io.ktor.client.engine.mock.*
 import kotlinx.coroutines.runBlocking
-import kotlin.test.Test
+import org.junit.Test
 
 internal class TikTokServiceTest {
 
