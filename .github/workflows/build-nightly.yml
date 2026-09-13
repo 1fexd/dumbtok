@@ -59,7 +59,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: linksheet-assist-nightly
+          name: dumbtok-nightly
           path: app/build/outputs/apk/nightly/*.apk
 
       - name: Get file name

@@ -48,8 +48,7 @@ android {
     compileSdk = 37
 
     defaultConfig {
-
-        applicationId = "fe.linksheet"
+        applicationId = "fe.dumbtok"
         minSdk = AndroidSdk.MIN_SDK
         targetSdk = AndroidSdk.COMPILE_SDK
 
