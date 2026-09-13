@@ -30,6 +30,7 @@ class TikTokService(
     private val streamFactory: TikTokStreamFactory = TikTokStreamFactory(httpClient),
     private val extractor: TiktokMediaExtractor = TiktokMediaExtractor(),
     private val urlService: TikTokUrlService = TikTokUrlService(),
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val httpDataSourceFactory = streamFactory.httpDataSourceFactory
 
@@ -72,10 +73,7 @@ class TikTokService(
 //        return fileName
 //    }
 
-    suspend fun extractPost(
-        dispatcher: CoroutineDispatcher = Dispatchers.IO,
-        url: String,
-    ): TikTokStatus? = withContext(dispatcher) {
+    suspend fun extractPost(url: String): TikTokStatus = withContext(dispatcher) {
         _events.emit(TiktokEvent.Resolving)
         val postUrl = resolveFullPostUrl(url) ?: return@withContext TikTokStatus.ResolveFailure
 
