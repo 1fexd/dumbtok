@@ -14,6 +14,9 @@ class VideoPost(
     val hasOriginalAudio: Boolean,
 ) : Post(postId, music) {
 
+    override fun toString(): String {
+        return "VideoPost(videoUrl='$videoUrl', hasOriginalAudio=$hasOriginalAudio)"
+    }
 }
 
 @Parcelize
@@ -23,9 +26,15 @@ class ImagePost(
     val imageUrls: List<String>,
 ) : Post(postId, music) {
 
+    override fun toString(): String {
+        return "ImagePost(imageUrls=$imageUrls)"
+    }
 }
 
 @Parcelize
 class PostMusic(val url: String, val duration: Double) : Parcelable {
 
+    override fun toString(): String {
+        return "PostMusic(url='$url', duration=$duration)"
+    }
 }
