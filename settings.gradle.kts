@@ -1,3 +1,17 @@
+@file:Suppress("UnstableApiUsage")
+
+import com.gitlab.grrfe.gradlebuild.config.configureRepositories
+import com.gitlab.grrfe.gradlebuild.repository.GradlePluginPortalRepository
+import com.gitlab.grrfe.gradlebuild.repository.MavenRepository
+import com.gitlab.grrfe.gradlebuild.repository.google
+import com.gitlab.grrfe.gradlebuild.repository.jitpack
+import com.gitlab.grrfe.gradlebuild.repository.mavenCentral
+import com.gitlab.grrfe.gradlebuild.repository.mozilla
+import fe.build.dependencies.Grrfe
+import fe.build.dependencies._1fexd
+
+rootProject.name = "dumbtok"
+
 pluginManagement {
     repositories {
         google()
@@ -7,30 +21,56 @@ pluginManagement {
     }
 
     plugins {
-        kotlin("plugin.serialization") version "2.1.0"
-        id("de.fayard.refreshVersions") version "0.60.5"
-        id("androidx.navigation.safeargs") version "2.8.2"
-        id("org.jetbrains.kotlin.android") version "2.1.0"
-        id("org.jetbrains.kotlin.plugin.compose") version "2.1.0"
+        id("de.fayard.refreshVersions") version "0.60.6"
+        id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+        id("com.android.library")
+        id("androidx.navigation.safeargs") version "2.9.6"
+    }
+
+    when (val gradleBuildDir = extra.properties["gradle.build.dir"]) {
+        null -> {
+            val gradleBuildVersion = extra.properties["gradle.build.version"]
+            resolutionStrategy {
+                eachPlugin {
+                    with(requested.id) {
+                        if (namespace == "com.gitlab.grrfe") {
+                            useModule("com.gitlab.grrfe.gradle-build:$name:$gradleBuildVersion")
+                        }
+                    }
+                }
+            }
+        }
+        else -> includeBuild(gradleBuildDir.toString())
     }
 }
 
 plugins {
     id("de.fayard.refreshVersions")
+    id("org.gradle.toolchains.foojay-resolver-convention")
+    id("com.gitlab.grrfe.settings-build-plugin")
 }
 
-@Suppress("UnstableApiUsage")
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-        maven { url = uri("https://jitpack.io") }
-        maven { url = uri("https://maven.mozilla.org/maven2") }
-        mavenLocal()
+configureRepositories(
+    MavenRepository.google(),
+    MavenRepository.mavenCentral(),
+    MavenRepository.jitpack(),
+    MavenRepository.mozilla(),
+    MavenRepository("https://oss.sonatype.org/content/repositories/snapshots"),
+    GradlePluginPortalRepository,
+    MavenRepository("https://storage.googleapis.com/r8-releases/raw"),
+    mode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+)
+
+extra.properties["gradle.build.dir"]
+    ?.let { includeBuild(it.toString()) }
+
+include(":app")
+
+buildSettings {
+    substitutes {
+        trySubstitute(Grrfe.std, properties["kotlin-ext.dir"])
+        trySubstitute(Grrfe.httpkt, properties["httpkt.dir"])
+        trySubstitute(Grrfe.gsonExt, properties["gson-ext.dir"])
+        trySubstitute(_1fexd.composeKit, properties["composekit.dir"])
     }
 }
-
-rootProject.name = "dumbtok"
-include(":app")

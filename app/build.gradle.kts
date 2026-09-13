@@ -1,51 +1,77 @@
-import fe.buildsrc.Version
-import fe.buildsrc.dependency.Grrfe
-import fe.buildsrc.dependency._1fexd
-import fe.buildsrc.extension.getOrSystemEnv
-import fe.buildsrc.extension.readPropertiesOrNull
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
+import com.gitlab.grrfe.gradlebuild.Version
+import com.gitlab.grrfe.gradlebuild.android.AndroidSdk
+import com.gitlab.grrfe.gradlebuild.android.ArchiveBaseName
+import com.gitlab.grrfe.gradlebuild.android.version.DefaultFallbackVersionCodeProducer
+import com.gitlab.grrfe.gradlebuild.android.version.SemverProducer
+import com.gitlab.grrfe.gradlebuild.android.version.VersionCodeProducer
+import com.gitlab.grrfe.gradlebuild.android.version.createAndroidVersionProvider
+import com.gitlab.grrfe.gradlebuild.common.CompilerOption
+import com.gitlab.grrfe.gradlebuild.common.KotlinCompilerArgs
+import com.gitlab.grrfe.gradlebuild.common.PluginOption
+import com.gitlab.grrfe.gradlebuild.util.PropertiesFile
+import com.gitlab.grrfe.gradlebuild.util.SystemEnvironment
+import com.gitlab.grrfe.gradlebuild.util.withProviders
+import fe.build.dependencies.Grrfe
+import fe.build.dependencies._1fexd
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 plugins {
-    kotlin("android")
     kotlin("plugin.compose")
     kotlin("plugin.serialization")
     id("com.android.application")
     id("androidx.navigation.safeargs.kotlin")
     id("kotlin-parcelize")
-    id("net.nemerosa.versioning")
+    id("com.gitlab.grrfe.android-build-plugin")
 }
 
 var appName = "DumbTok"
-val dtf: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH_mm_ss")
+object NightlyTagVersionCodeProducer : VersionCodeProducer {
+    private fun readResolve(): Any = NightlyTagVersionCodeProducer
+    private val DTF: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+    private val NIGHTLY_TAG_REGEX = Regex("^nightly-(\\d{4})(\\d{2})(\\d{2})(\\d{2})$")
+
+    override fun produceVersionCode(tag: String): Int? {
+        println("Handling nightly tag $tag")
+        val match = NIGHTLY_TAG_REGEX.matchEntire(tag)?.groupValues ?: return null
+
+        val (_, year, month, day, buildNum) = match
+        val date = LocalDate.of(year.toInt(), month.toInt(), day.toInt())
+        val dateStr = date.format(DTF) + buildNum.padStart(1, '0')
+
+        return dateStr.toIntOrNull()
+    }
+}
 
 android {
     namespace = "fe.dumbtok"
-    compileSdk = Version.COMPILE_SDK
+    compileSdk = 37
 
     defaultConfig {
-        applicationId = "fe.dumbtok"
-        minSdk = Version.MIN_SDK
-        targetSdk = Version.COMPILE_SDK
+
+        applicationId = "fe.linksheet"
+        minSdk = AndroidSdk.MIN_SDK
+        targetSdk = AndroidSdk.COMPILE_SDK
 
         val now = System.currentTimeMillis()
-        val localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("UTC"))
-        val versionInfo = providers.provider { versioning.info }.get()
 
-        versionCode = versionInfo.tag?.let {
-            versionInfo.versionNumber.versionCode
-        } ?: (now / 1000).toInt()
+        val versionProvider = createAndroidVersionProvider(
+            versionCodeProducer = { tag ->
+                NightlyTagVersionCodeProducer.produceVersionCode(tag) ?: SemverProducer.produceVersionCode(tag)
+            },
+            fallbackVersionCodeProducer = DefaultFallbackVersionCodeProducer
+        )
+        val (name, code, commit, branch) = versionProvider.get()
+        versionCode = code
+        versionName = name
 
-        versionName = versionInfo.tag ?: versionInfo.full
-        val archivesBaseName = if (versionInfo.tag != null) {
-            "$appName-$versionName"
-        } else "$appName-${dtf.format(localDateTime)}-$versionName"
-
-        setProperty("archivesBaseName", archivesBaseName)
+        with(ArchiveBaseName) {
+            project.base.setArchivesName(appName, name, now)
+        }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testOptions.unitTests.isIncludeAndroidResources = true
+
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -53,17 +79,20 @@ android {
 
     signingConfigs {
         register("env") {
-            val properties = rootProject.file(".ignored/keystore.properties").readPropertiesOrNull()
-
-            storeFile = properties.getOrSystemEnv("KEYSTORE_FILE_PATH")?.let { rootProject.file(it) }
-            storePassword = properties.getOrSystemEnv("KEYSTORE_PASSWORD")
-            keyAlias = properties.getOrSystemEnv("KEY_ALIAS")
-            keyPassword = properties.getOrSystemEnv("KEY_PASSWORD")
+            val properties = with(PropertiesFile) {
+                rootProject.file(".ignored/keystore.properties").readPropertiesOrNull()
+            }
+            val provider = withProviders(properties, SystemEnvironment)
+            storeFile = provider.get("KEYSTORE_FILE_PATH")?.let { rootProject.file(it) }
+            storePassword = provider.get("KEYSTORE_PASSWORD")
+            keyAlias = provider.get("KEY_ALIAS")
+            keyPassword = provider.get("KEY_PASSWORD")
         }
     }
 
     buildTypes {
         debug {
+            applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             resValue("string", "app_name", "$appName Debug")
         }
@@ -86,15 +115,9 @@ android {
         }
     }
 
-    kotlin {
-        jvmToolchain(Version.JVM)
-        compilerOptions {
-            freeCompilerArgs.addAll("-P", "plugin:org.jetbrains.kotlin.parcelize:experimentalCodeGeneration=true")
-        }
-    }
-
     buildFeatures {
         compose = true
+        resValues = true
     }
 
     packaging {
@@ -102,6 +125,14 @@ android {
             excludes += "/META-INF/versions/9/OSGI-INF/MANIFEST.MF"
 
         }
+    }
+}
+
+kotlin {
+    jvmToolchain(Version.JVM)
+    with(compilerOptions.freeCompilerArgs) {
+        addAll(KotlinCompilerArgs.createCompilerOptions(CompilerOption.SkipPreReleaseCheck))
+        addAll(KotlinCompilerArgs.createPluginOptions(PluginOption.Parcelize.ExperimentalCodeGeneration to true))
     }
 }
 
@@ -133,26 +164,30 @@ dependencies {
     implementation(JetBrains.ktor.client.android)
     implementation(JetBrains.ktor.client.encoding)
     implementation(JetBrains.ktor.client.mock)
+    implementation(JetBrains.ktor.client.logging)
     implementation("com.gitlab.grrfe:jsoup-ext:_")
 
-    implementation(Grrfe.ext.gson)
+    implementation(platform(Grrfe.gsonExt.bom))
+    implementation(Grrfe.gsonExt.core)
 
     implementation(Koin.android)
     implementation(Koin.compose)
-    implementation(_1fexd.android.preference.core)
-    implementation(_1fexd.android.preference.compose)
-    implementation(_1fexd.android.preference.composeMock)
-    implementation(_1fexd.android.compose.dialog)
-    implementation(_1fexd.android.compose.route)
-    implementation(_1fexd.android.span.compose)
-    implementation(_1fexd.android.lifecycleUtil.core)
-    implementation(_1fexd.android.lifecycleUtil.koin)
-    implementation(_1fexd.composeKit.app.core)
-    implementation(_1fexd.composeKit.theme.core)
-    implementation(_1fexd.composeKit.theme.preference)
-    implementation(_1fexd.composeKit.component)
+    implementation(platform(_1fexd.composeKit.bom))
     implementation(_1fexd.composeKit.core)
-    implementation(_1fexd.composeKit.layout)
+    implementation(_1fexd.composeKit.preference.core)
+    implementation(_1fexd.composeKit.preference.compose.core2)
+    implementation(_1fexd.composeKit.preference.compose.core)
+    implementation(_1fexd.composeKit.preference.compose.mock)
+    implementation(_1fexd.composeKit.lifecycle.core)
+    implementation(_1fexd.composeKit.lifecycle.koin)
+    implementation(_1fexd.composeKit.span.compose)
+    implementation(_1fexd.composeKit.compose.dialog)
+    implementation(_1fexd.composeKit.compose.route)
+    implementation(_1fexd.composeKit.compose.app)
+    implementation(_1fexd.composeKit.compose.theme.core)
+    implementation(_1fexd.composeKit.compose.theme.preference)
+    implementation(_1fexd.composeKit.compose.component)
+    implementation(_1fexd.composeKit.compose.layout)
 
     implementation("io.ktor:ktor-client-okhttp-jvm:_")
     implementation(AndroidX.lifecycle.runtime.ktx)
@@ -173,6 +208,7 @@ dependencies {
     androidTestImplementation(AndroidX.media3.testUtils.robolectric)
     implementation(AndroidX.media3.ui)
 
+
     implementation(AndroidX.appCompat)
     implementation(Google.android.material)
 
@@ -181,12 +217,16 @@ dependencies {
     testImplementation(Koin.android)
     testImplementation(Testing.junit4)
     testImplementation(Testing.robolectric)
+    testImplementation(KotlinX.coroutines.test)
+    testImplementation(CashApp.turbine)
 
     testImplementation(JetBrains.ktor.client.core)
     testImplementation(JetBrains.ktor.client.mock)
 
     testImplementation("com.willowtreeapps.assertk:assertk:_")
     testImplementation(kotlin("test"))
+    testImplementation(Testing.robolectric)
+    testImplementation(AndroidX.test.ext.junit.ktx)
     androidTestImplementation(platform(AndroidX.compose.bom))
     androidTestImplementation(AndroidX.compose.ui.testJunit4)
     debugImplementation(AndroidX.compose.ui.tooling)
