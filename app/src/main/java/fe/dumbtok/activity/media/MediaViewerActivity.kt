@@ -1,5 +1,7 @@
+@file:SuppressLint("UnsafeOptInUsageError")
 package fe.dumbtok.activity.media
 
+import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -13,7 +15,6 @@ import androidx.media3.exoplayer.source.MediaSource
 import fe.composekit.appbase.AppBaseComponentActivity
 import fe.composekit.appbase.AppTheme
 import fe.dumbtok.composable.MediaViewer
-import fe.dumbtok.composable.VideoPlayerMediaItem
 import fe.dumbtok.composable.theme.AppColor
 import fe.dumbtok.composable.theme.Typography
 import fe.dumbtok.module.tiktok.ImagePost

@@ -1,5 +1,7 @@
+@file:SuppressLint("UnsafeOptInUsageError")
 package fe.dumbtok.module.tiktok
 
+import android.annotation.SuppressLint
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MediaSource

@@ -1,5 +1,7 @@
+@file:SuppressLint("UnsafeOptInUsageError")
 package fe.dumbtok.module.media3
 
+import android.annotation.SuppressLint
 import android.net.Uri
 import androidx.media3.common.C
 import androidx.media3.common.MediaLibraryInfo
